@@ -13,7 +13,10 @@
   (lambda (x)
     (define (reinforce y)
        (* 0.5 (+ y (/ x y))))
-    (iterate n reinforce (fllog2 (fl x)))))
+    (iterate n
+             reinforce
+             (flexp2 (/ (fllog2 (fl x))
+                        2)))))
 
-; 8 са най-малкото стъпки, за които минават тестовете
-(define my-sqrt (square-root-with-precision 8))
+; 1 стъпка ни е достатъчна за да минат тестовете.
+(define my-sqrt (square-root-with-precision 1))
