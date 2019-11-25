@@ -17,86 +17,43 @@
 ; the provide "exports" these functions
 
 ; 00.
-(define (all? p? xs)
-  (not (any? (lambda (x)
-               (not (p? x)))
-             xs)))
+(define (all? p? xs) void)
 
 ; 01.
-(define (any? p? xs)
-  (and (not (null? xs))
-       (or (p? (car xs))
-           (any? p? (cdr xs)))))
+(define (any? p? xs) void)
 
 ; 02.
-(define (concat xss)
-  (apply append xss))
+(define (concat xss) void)
 
 ; 03.
-(define (rows xss)
-  xss)
+(define (rows xss) void)
 
 ; 04.
-(define (cols xss)
-  (apply map list xss))
+(define (cols xss) void)
 
 ; 05.
-(define (matrix-ref xss i j)
-  (list-ref (list-ref xss i) j))
+(define (matrix-ref xss i j) void)
 
 ; 06.
-;;; slower
-;;(define (set xs i y)
-;;  (append (take xs i)
-;;          (list y)
-;;          (drop xs (+ 1 i))))
-
-(define (set xs i y)
-  (cond ((null? xs) xs)
-        ((= i 0) (cons y xs))
-        (else (cons (car xs) (set (cdr xs) (- i 1) y)))))
+(define (set xs i x) void)
 
 ; 07.
-(define (place xss i j y)
-  (set xss i (set (list-ref xss i) j y)))
+(define (place xss i j x) void)
 
 ; 08.
-(define (diag xss)
-  (if (null? xss)
-      xss
-      (cons (caar xss)
-            (diag (map cdr (cdr xss))))))
+(define (diag xss) void)
 
 ; 09.
-(define (diags xss)
-  (list (diag xss) (diag (map reverse xss))))
+(define (diags xss) void)
 
 ; 10.
-(define (map-matrix f xss)
-  (map (lambda (xs)
-         (map f xs))
-       xss))
+(define (map-matrix f xss) void)
 
 ; 11.
-(define (filter-matrix p? xss)
-  (map (lambda (xs)
-         (filter p? xs))
-       xss))
+(define (filter-matrix p? xss) void)
 
 ; 12.
-;;; more verbose than just using `map`
-;; (define (zip-with f xs ys)
-;;   (if (or (null? xs) (null? ys))
-;;       '()
-;;       (cons (f (car xs) (car ys))
-;;             (zip-with f (cdr xs) (cdr ys)))))
-
-; That's just how map works in scheme
-(define zip-with map)
+(define (zip-with f xs ys) void)
 
 ; 13.
-(define (zip-matrix xss yss)
-  (zip-with (lambda (xs ys)
-              (zip-with cons xs ys))
-            xss
-            yss))
+(define (zip-matrix xss yss) void)
