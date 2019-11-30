@@ -53,7 +53,7 @@
 
 (define (set xs i y)
   (cond ((null? xs) xs)
-        ((= i 0) (cons y xs))
+        ((= i 0) (cons y (cdr xs)))
         (else (cons (car xs) (set (cdr xs) (- i 1) y)))))
 
 ; 07.
