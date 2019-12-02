@@ -62,10 +62,20 @@
 
 (define (negate x) (- x))
 
-(define (maximum-by max* xs)
-  (foldr max* (car xs) (cdr xs)))
+(define (foldl f v xs)
+  (if (null? xs)
+      v
+      (foldl f (f v (car xs)) (cdr xs))))
 
-(define (minimum xs) (maximum-by min xs))
+(define (maximum-on f xs)
+  (foldl (lambda (acc x)
+           (if (< (f x) (f acc))
+               acc
+               x))
+         (car xs) (cdr xs)))
+
+(define (minimum xs)
+  (foldl min (car xs) (cdr xs)))
 
 (define (place2 xss ij y)
   (place xss (car ij) (cdr ij) y))
@@ -89,13 +99,9 @@
 
 ; returns a pair of indexes on the board - the next best play for that player
 ; assumes there is at least one unmarked position, i.e., a play could be made
-(define (play board player) ; player1 is #t, player2 if #f
+(define (play board player) ; player1 is #t, player2 is #f
   ; the best play is the one whose worst outcome is the biggest
-  (maximum-by (lambda (ij1 ij2)
-               (define (value ij)
-                 (worst-outcome (place2 board ij (get-sign player))
-                                player))
-               (if (< (value ij1) (value ij2))
-                   ij2
-                   ij1))
-             (unmarked-positions board)))
+  (maximum-on (lambda (ij)
+                (worst-outcome (place2 board ij (get-sign player))
+                               player))
+              (unmarked-positions board)))
