@@ -37,6 +37,12 @@
   xss)
 
 ; 04.
+;;; more verbose
+;; (define (cols xss)
+;;   (if (or (null? xss) (null? (car xss)))
+;;       '()
+;;       (cons (map car xss) (cols (map cdr xss)))))
+
 (define (cols xss)
   (apply map list xss))
 
