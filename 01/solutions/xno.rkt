@@ -2,7 +2,7 @@
 
 (provide coord-matrix
          unmarked-positions
-         worst-outcome
+         best-outcome
          winner
          play)
 
@@ -57,19 +57,17 @@
                    (concat (zip-matrix board (coord-matrix 3 3))))))
 
 ; returns the sign of the player
-(define (get-sign player) ; player1 is #t, player2 is #f
-  (if player "X" "O"))
-
-(define (negate x) (- x))
+(define (get-sign me) ; player1 is #t, player2 is #f
+  (if me "X" "O"))
 
 (define (foldl f v xs)
   (if (null? xs)
       v
       (foldl f (f v (car xs)) (cdr xs))))
 
-(define (maximum-on f xs)
+(define (extremum-on less? f xs)
   (foldl (lambda (acc x)
-           (if (< (f x) (f acc))
+           (if (less? (f acc) (f x))
                acc
                x))
          (car xs) (cdr xs)))
@@ -77,31 +75,51 @@
 (define (minimum xs)
   (foldl min (car xs) (cdr xs)))
 
-(define (place2 xss ij y)
-  (place xss (car ij) (cdr ij) y))
+(define (grade board)
+  (case (winner board)
+    (("X")  1)
+    (("D")  0)
+    (("O") -1)
+    (else  #f)))
 
-; evaluates the board after player has made his play
-; always returns one of {-1, 0, 1}
-; if the game is not finished, continues to play-out the game
-; and finds the value of the worst possible outcome
-(define (worst-outcome board player) ; player1 is #t, player2 is #f
-  (let ((result (winner board)))
-    (cond
-      ((eqv? result (get-sign player)) 1)
-      ((eqv? result "D") 0)
-      (result -1)
-      (else ; the game has not ended
-        (minimum (map (lambda (ij)
-                        (negate
-                          (worst-outcome (place2 board ij (get-sign (not player)))
-                                         (not player))))
-                      (unmarked-positions board)))))))
+; ps are the unmarked positions on the board left to be evaluated
+(define (improve alpha beta ps board me)
+  (if (or (null? ps) (>= alpha beta))
+      (if me alpha beta)
+      (let ((value (best-outcome alpha
+                                 beta
+                                 (car ps)
+                                 board
+                                 me)))
+        (if me
+            (improve (max alpha value)
+                     beta
+                     (cdr ps)
+                     board
+                     me)
+            (improve alpha
+                     (min beta value)
+                     (cdr ps)
+                     board
+                     me)))))
+
+;;  the best outcome for when `me` plays his sign on position `p`
+;;  in general, if `me` is #t, the best possible value on empty board is 1
+;;  otherwise the best value is -1
+; assumes the position `p` on `prev-board` is empty
+(define (best-outcome alpha beta p prev-board me)
+  (define board (place prev-board (car p) (cdr p) (get-sign me)))
+  (or (grade board)
+      (let ((ps (unmarked-positions board)))
+        (improve alpha beta ps board (not me)))))
+  
 
 ; returns a pair of indexes on the board - the next best play for that player
 ; assumes there is at least one unmarked position, i.e., a play could be made
-(define (play board player) ; player1 is #t, player2 is #f
-  ; the best play is the one whose worst outcome is the biggest
-  (maximum-on (lambda (ij)
-                (worst-outcome (place2 board ij (get-sign player))
-                               player))
-              (unmarked-positions board)))
+(define (play board me) ; player1 "X" is #t, player2 "O" is #f
+  (cdr (extremum-on (if me > <)
+                    car
+                    (map (lambda (p)
+                           (cons (best-outcome -inf.0 +inf.0 p board me)
+                                 p))
+                         (unmarked-positions board)))))
