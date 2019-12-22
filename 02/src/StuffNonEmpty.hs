@@ -36,10 +36,10 @@ groupOnNonEmpty f
 classifyByNonEmpty :: (a -> a -> Bool) -> [a] -> [NonEmpty a]
 classifyByNonEmpty (~~) = foldr insertClass []
   where insertClass x [] = [x:|[]]
-        insertClass x ((y:|ys):zss) =
+        insertClass x (ys@(y:|ys'):zss) =
           if x ~~ y
-          then (x:|y:ys):zss
-          else (y:|ys) : insertClass x zss
+          then (x:|y:ys'):zss
+          else ys : insertClass x zss
 
 classifyOnNonEmpty :: Eq b => (a -> b) -> [a] -> [NonEmpty a]
 classifyOnNonEmpty f
