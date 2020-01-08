@@ -37,10 +37,10 @@ listToBST = foldl' (flip insertOrdered) Empty
 
 isBST :: Ord a => Tree a -> Bool
 -- first idea
-isBST Empty = True
+isBST Empty        = True
 isBST (Node x l r) = check (<=) l && check (>) r
-  where check _    Empty          = True
-        check (~~) t@(Node y _ _) = y ~~ x && isBST t
+  where check _ Empty          = True
+        check p t@(Node y _ _) = y `p` x && isBST t
 -- also works
 --isBST = between Bot Top
 
@@ -50,9 +50,7 @@ data BotTop a = Bot | Val a | Top
 between :: Ord a => BotTop a -> BotTop a -> Tree a -> Bool
 between low high Empty        = low <= high
 between low high (Node x l r)
-  =  low < vx
-  && vx <= high
-  && between low vx   l
+  =  between low vx   l
   && between vx  high r
   where vx = Val x
 
@@ -95,7 +93,7 @@ findPred :: (a -> Bool) -> Tree a -> Maybe a
 findPred p = getFirst . foldMapTree (First . onMaybe p)
 
 findAll :: (a -> Bool) -> Tree a -> [a]
-findAll p = foldMapTree (filter p . return)
+findAll p = foldMapTree $ filter p . return
 -- if return is forbidden
 --findAll p = foldMapTree (filter p . (:[]))
  
@@ -105,13 +103,13 @@ ifJust Nothing  _ = Nothing
 ifJust (Just x) f = f x
 
 validateTree :: (a -> Maybe b) -> Tree a -> Maybe (Tree b)
-validateTree _ Empty = Just Empty
+validateTree _ Empty = return Empty
 -- coolest
 validateTree f (Node x l r) = do
   l' <- validateTree f l
   y  <- f x
   r' <- validateTree f r
-  Just $ Node y l' r'
+  return $ Node y l' r'
 
 -- first idea
 --validateTree f (Node x l r)
@@ -135,8 +133,8 @@ data Direction
 fetch :: [Direction] -> Tree a -> Maybe a
 fetch []     (Node x _ _) = Just x
 fetch (d:ds) (Node _ l r)
-  = fetch ds (case d of L -> l
-                        R -> r)
+  = fetch ds $ case d of L -> l
+                         R -> r
 fetch _ _ = Nothing
 
 paths :: Tree a -> [(a, [Direction])]
