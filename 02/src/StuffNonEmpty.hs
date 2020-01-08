@@ -10,20 +10,39 @@ module StuffNonEmpty
 import Stuff (sortOn, sortBy, on, (&&&))
 
 groupNonEmpty :: Eq a => [a] -> [NonEmpty a]
-groupNonEmpty = undefined
+groupNonEmpty = groupByNonEmpty (==)
 
 data NonEmpty a = a :| [a]
   deriving (Show, Eq, Ord)
 infixr 4 :|
 
 mapNonEmpty :: (a -> b) -> NonEmpty a -> NonEmpty b
-mapNonEmpty = undefined
+mapNonEmpty f (x:|xs) = f x :| map f xs
 
 groupByNonEmpty :: (a -> a -> Bool) -> [a] -> [NonEmpty a]
-groupByNonEmpty = undefined
+groupByNonEmpty (~~) = foldr insertGroup []
+  where insertGroup x [] = [x:|[]]
+        insertGroup x rec@((y:|ys):zss) =
+          if x ~~ y
+          then (x:|y:ys):zss
+          else (x:|[]):rec
 
 groupOnNonEmpty :: Eq b => (a -> b) -> [a] -> [NonEmpty a]
-groupOnNonEmpty = undefined
+groupOnNonEmpty f
+  = map (mapNonEmpty fst)
+  . groupByNonEmpty ((==) `on` snd)
+  . map (id &&& f)
 
-classifyOnNonEmpty :: Ord b => (a -> b) -> [a] -> [NonEmpty a]
-classifyOnNonEmpty = undefined
+classifyByNonEmpty :: (a -> a -> Bool) -> [a] -> [NonEmpty a]
+classifyByNonEmpty (~~) = foldr insertClass []
+  where insertClass x [] = [x:|[]]
+        insertClass x (ys@(y:|ys'):zss) =
+          if x ~~ y
+          then (x:|y:ys'):zss
+          else ys : insertClass x zss
+
+classifyOnNonEmpty :: Eq b => (a -> b) -> [a] -> [NonEmpty a]
+classifyOnNonEmpty f
+  = map (mapNonEmpty fst)
+  . classifyByNonEmpty ((==) `on` snd)
+  . map (id &&& f)
