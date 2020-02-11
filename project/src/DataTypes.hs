@@ -1,6 +1,5 @@
-module DataTypes
-  ( NonEmpty(..)
-  , Term(..)
+module Prolog.DataTypes
+  ( Term(..)
   , Atom(..)
   , HornClause(..)
   , UName
@@ -37,5 +36,3 @@ data HornClause = Atom :- [Atom]
   deriving (Show, Eq)
 
 type Program = [HornClause]
-
--- type Query

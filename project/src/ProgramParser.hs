@@ -1,11 +1,11 @@
 -- TODO: support whitespace
-module ProgramParser where
+module Prolog.ProgramParser where
 
 import Data.Char (isUpper, isLower, isAlphaNum)
 
 import Data.List.NonEmpty (NonEmpty(..), toList)
 
-import DataTypes
+import Prolog.DataTypes
   ( Term(..)
   , Atom(..)
   , HornClause(..)
