@@ -30,8 +30,6 @@ data Atom = Atom LName (NonEmpty Term)
 -- Atom "nat" (Const "z":|[]) :- []
 --
 -- Rules have at least one premise.
---
--- HornClause also repesents queries.
 data HornClause = Atom :- [Atom]
   deriving (Show, Eq)
 
