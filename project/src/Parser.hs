@@ -23,6 +23,7 @@ module Parser
   , nom
   , result, empty, (<|>)
   , many, some
+  , endOfInput
   ) where
 
 import Data.Maybe (fromMaybe)
@@ -42,7 +43,7 @@ newtype Parser a = Parser {runParser :: String -> Maybe (String, a)}
 
 -- Run a parser ignoring the leftover string.
 parse :: Parser a -> String -> Maybe a
-parse px input = fmap snd $ runParser px input
+parse px input = snd A.<$> runParser px input
 ------------------------------------------------------------
 -- Base parsers
 ------------------------------------------------------------
