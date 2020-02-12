@@ -152,4 +152,4 @@ programParser :: Parser Program
 programParser = followedBy optWhitespace hornClauseParser <* endOfInput
 
 goalParser :: Parser [Atom]
-goalParser = many atomParser
+goalParser = toList <$> sepBy1 (char ',') atomParser
