@@ -10,41 +10,44 @@ data Restriction = Term :=: Term
 
 type Subst = [(UName,Term)]
 
-resolveStep :: Goal -> HornClause -> Maybe (Goal, Subst)
-resolveStep []     _         = Just ([], []) -- the empty goal is true
-resolveStep (a:as) (r :- ps) = do
+resolveStep :: Atom -> HornClause -> Maybe (Goal, Subst)
+--resolveStep []     _         = Just ([], []) -- the empty goal is true
+resolveStep a (r :- ps) = do
+  sameName a r
   sub <- unify $ equify r a 
-  return (ps ++ as, sub)
+  return (ps, sub)
+    where sameName (Atom x _) (Atom y _) =
+            if x == y
+               then Just x
+               else Nothing
 
-provides :: Atom -> HornClause -> Bool
-provides a'@(Atom a _) (b'@(Atom b _) :- _)
-  =  a == b
-  && toBool (unify $ equify a' b')
-    where toBool Nothing  = False
-          toBool (Just _) = True
+--provides :: Atom -> HornClause -> Bool
+--provides a'@(Atom a _) (b'@(Atom b _) :- _)
+--  =  a == b
+--  && toBool (unify $ equify a' b')
+--    where toBool Nothing  = False
+--          toBool (Just _) = True
 
 first :: [Maybe a] -> Maybe a
 first [] = Nothing
-first ((Just x):_) = Just x
+first (Just x  : _) = Just x
 first (Nothing : mxs) = first mxs
 
 justs :: [Maybe a] -> [a]
 justs [] = []
-justs (Nothing  : xs) = justs xs
-justs ((Just x) : xs) = x : justs xs
+justs (Nothing : xs) = justs xs
+justs (Just x  : xs) = x : justs xs
 
 
 resolve :: Program -> Goal -> Maybe Subst
-resolve _ [] = Just []
-resolve p g@(a:_)
+resolve prog a = 
   = first
   $ map continue 
   $ justs
-  $ map (resolveStep g)
-  $ filter (provides a) p
+  $ map (resolveStep a) prog
     where continue :: (Goal, Subst) -> Maybe Subst
           continue (g', substs) = do
-            substs' <- resolve p $ subGoal substs g'
+            substs' <- resolve p $ subGoal substs (g' ++ as)
             return $ substs ++ substs'
 
 
