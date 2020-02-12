@@ -1,7 +1,7 @@
 -- TODO: support whitespace
 module Prolog.ProgramParser where
 
-import Data.Char (isUpper, isLower, isAlphaNum)
+import Data.Char (isUpper, isLower, isAlphaNum, isSpace)
 
 import Data.List.NonEmpty (NonEmpty(..), toList)
 
@@ -23,6 +23,7 @@ import Parser
   , (<|>)
   , many
   , some
+  , endOfInput
   )
 
 -- Always parses the given character
@@ -75,8 +76,13 @@ sepBy1 sep p = do
              []     -> x :| xs
              (y:ys) -> y :| ys ++ [x]
 
---sepBy :: Parser sep -> Parser a -> Parser [a]
---sepBy sep p = sepBy1 sep p <|> result []
+
+-- Parse many values, each followed by the separator
+-- e.g. parse (followedBy (char ',') nom) "a,b,c," == "abc"
+--      parse (followedBy (char ',') nom) "a,b,c,d" == "abc"
+followedBy :: Parser sep -> Parser a -> Parser [a]
+followedBy sep p = many $ p <* sep
+
 
 -- Parse a nonempty list of values,
 -- separated by ',' and enclosed by parenthesis,
@@ -139,5 +145,11 @@ ruleParser = do
 hornClauseParser :: Parser HornClause
 hornClauseParser = factParser <|> ruleParser
 
+optWhitespace :: Parser String
+optWhitespace = many $ satisfy isSpace
+
 programParser :: Parser Program
-programParser = many hornClauseParser
+programParser = followedBy optWhitespace hornClauseParser <* endOfInput
+
+goalParser :: Parser [Atom]
+goalParser = many atomParser

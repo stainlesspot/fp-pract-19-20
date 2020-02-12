@@ -7,7 +7,7 @@ module Prolog.DataTypes
   , Program
   ) where
 
-import Data.List.NonEmpty (NonEmpty(..))
+import Data.List.NonEmpty (NonEmpty(..), toList)
 
 -- Represents string, starting with upper-case letter.
 type UName = String
