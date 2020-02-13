@@ -1,16 +1,22 @@
--- TODO: support whitespace
-module Prolog.ProgramParser where
+module Prolog.ProgramParser
+  ( upperNameParser
+  , lowerNameParser
+  , termParser
+  , atomParser
+  , hornClauseParser
+  , programParser
+  , goalParser
+  ) where
 
 import Data.Char (isUpper, isLower, isAlphaNum, isSpace)
 
 import Data.List.NonEmpty (NonEmpty(..), toList)
-
-import Prolog.DataTypes
-  ( Term(..)
+import Prolog.Program
+  ( UpperName
+  , LowerName
+  , Term(..)
   , Atom(..)
   , HornClause(..)
-  , UName
-  , LName
   , Program
   )
 
@@ -52,104 +58,97 @@ satisfy p = do
 
 -- Surround a parser with an opening and closing one
 between :: Parser open -> Parser close -> Parser a -> Parser a
-between open close inside = do
-  open
-  r <- inside
-  close
-  result r
-
----- A parser that runs both parsers, but ignores the result of the right one.
----- This is traditionally (<*), and is available for all Applicatives
---ignoreRight :: Parser a -> Parser b -> Parser a
---ignoreRight px py = do
---  x <- px
---  py
---  result x
+between open close inside
+  = open *> inside <* close
 
 -- Parse a value one or more times, separated by another parser.
 sepBy1 :: Parser sep -> Parser a -> Parser (NonEmpty a)
 sepBy1 sep p = do
-  --xs <- many $ ignoreRight p sep
   xs <- many $ p <* sep
   x  <- p
   result $ case xs of
              []     -> x :| xs
              (y:ys) -> y :| ys ++ [x]
 
-
--- Parse many values, each followed by the separator
--- e.g. parse (followedBy (char ',') nom) "a,b,c," == "abc"
---      parse (followedBy (char ',') nom) "a,b,c,d" == "abc"
-followedBy :: Parser sep -> Parser a -> Parser [a]
-followedBy sep p = many $ p <* sep
-
-
 -- Parse a nonempty list of values,
 -- separated by ',' and enclosed by parenthesis,
 -- e.g., parse (vector nom) "(a,b,c,d)" == 'a':|"bcd"
-vector1 :: Parser a -> Parser (NonEmpty a)
-vector1
-  = between (char '(') (char ')')
-  . sepBy1 (char ',')
+tuple1 :: Parser a -> Parser (NonEmpty a)
+tuple1
+  = between (char '(' <* optionalWhitespace) (optionalWhitespace *> char ')')
+  . commaSeparated
+
+surroundWith :: Parser surr -> Parser a -> Parser a
+surroundWith surr = between surr surr
+
+optionalWhitespace :: Parser String
+optionalWhitespace = many $ satisfy isSpace
+
+-- parser which allows whitespace around another parser.
+spaced :: Parser a -> Parser a
+spaced = surroundWith optionalWhitespace
+
+commaSeparated :: Parser a -> Parser (NonEmpty a)
+commaSeparated = sepBy1 $ spaced $ char ','
 
 
 isAlphaNumUnderscore :: Char -> Bool
 isAlphaNumUnderscore c
   = c == '_' || isAlphaNum c
 
---------------------------------------------------
------      Parsers for program elements      -----
+toListParser :: Parser (NonEmpty a) -> Parser [a]
+toListParser p = fmap toList p <|> pure []
 
-uNameParser :: Parser UName
-uNameParser = do
+-- Extends tuple1 to match the empty string.
+-- This parser does not match "()".
+optionalTuple :: Parser a -> Parser [a]
+optionalTuple = toListParser . tuple1
+
+--------------------------------------------------
+-----      Parsers for Program elements      -----
+
+upperNameParser :: Parser UpperName
+upperNameParser = do
   u <- satisfy isUpper
   rest <- many $ satisfy isAlphaNumUnderscore
-  return $ u:rest
+  pure $ u:rest
 
-lNameParser :: Parser LName
-lNameParser = do
+lowerNameParser :: Parser LowerName
+lowerNameParser = do
   l <- satisfy isLower
   rest <- many $ satisfy isAlphaNumUnderscore
-  return $ l:rest
+  pure $ l:rest
 
 varParser :: Parser Term
-varParser = Var <$> uNameParser
-
-constParser :: Parser Term
-constParser = Const <$> lNameParser
+varParser = Var <$> upperNameParser
 
 funcParser :: Parser Term
-funcParser = Func <$> lNameParser <*> vector1 termParser
+funcParser = Func <$> lowerNameParser <*> optionalTuple termParser
 
 termParser :: Parser Term
-termParser = funcParser <|> constParser <|> varParser
+termParser = varParser <|> funcParser
 
 atomParser :: Parser Atom
-atomParser = Atom <$> lNameParser <*> vector1 termParser
-
--- All rules and facts end with '.'
-endOfClause :: Parser ()
-endOfClause = char '.' *> result ()
-
-factParser :: Parser HornClause
-factParser = (:- []) <$> atomParser <* endOfClause
-
-ruleParser :: Parser HornClause
-ruleParser = do
-  a <- atomParser
-  string ":-"
-  ps <- sepBy1 (char ',') atomParser
-  endOfClause
-  return $ a :- toList ps
+atomParser = Atom <$> lowerNameParser <*> tuple1 termParser
 
 hornClauseParser :: Parser HornClause
-hornClauseParser = factParser <|> ruleParser
-
-optWhitespace :: Parser String
-optWhitespace = many $ satisfy isSpace
+hornClauseParser = do
+  a <- atomParser
+  as <- bodyParser
+  spaced $ char '.'
+  pure $ a :- as
+  where bodyParser :: Parser [Atom]
+        bodyParser = toListParser $ do
+          spaced $ string ":-"
+          commaSeparated atomParser
 
 programParser :: Parser Program
-programParser = followedBy optWhitespace hornClauseParser <* endOfInput
+programParser
+  = between optionalWhitespace endOfInput
+  $ many hornClauseParser
 
 goalParser :: Parser [Atom]
-goalParser = toList <$> sepBy1 (char ',') atomParser
+goalParser
+  = between optionalWhitespace endOfInput
+  $ toList <$> commaSeparated atomParser <* spaced (char '.')
+
