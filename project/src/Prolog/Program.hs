@@ -1,4 +1,4 @@
-module Prolog.DataTypes
+module Prolog.Program
   ( UpperName
   , LowerName
   , Term(..)
@@ -21,9 +21,6 @@ type LowerName = String
 --
 -- Variables start with an upper-case letter
 -- and function symbols start with a lower-case letter.
---
--- "X", "Y2", "Person", "Start_point" are examples of variables.
--- "c", "f(X)", "try_1(X,g(a),g(b))" are examples of function symbols.
 data Term = Var UpperName | Func LowerName [Term]
   deriving (Show, Eq)
 
