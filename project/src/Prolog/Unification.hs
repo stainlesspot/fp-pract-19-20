@@ -1,18 +1,30 @@
 module Prolog.Unification
-  ( -- Replacement
-  , Substitution
-  , unify
+  ( Substitution
   , subVar
   , subTerm
   , subAtom
+  , composeSub
+  , unify
+  , unifyAtoms
   ) where
+
+import Prolog.Program
+  ( UpperName
+  , Term(..)
+  , Atom(..)
+  )
+
+import Data.List.NonEmpty (toList)
+import Data.Function (on)
+import Data.Maybe (mapMaybe)
+import Control.Monad (guard)
 
 -- An equation of two terms, represents the goal of making them equal.
 data Matching = Term :==: Term
   deriving (Show, Eq)
 
-instance Functor Matching where
-  fmap f (t :==: k) = f t :==: f k
+mapTerms :: (Term -> Term) -> Matching -> Matching
+mapTerms f (t :==: k) = f t :==: f k
 
 -- A variable name to be replaced with a term
 data Replacement = UpperName := Term
@@ -20,7 +32,7 @@ data Replacement = UpperName := Term
 type Substitution = [Replacement]
 
 subVar :: Substitution -> UpperName -> Term
-subVar subst x = case mapMaybe sameVarTerm of
+subVar subst x = case mapMaybe sameVarTerm subst of
   []    -> Var x
   (t:_) -> t
   where sameVarTerm :: Replacement -> Maybe Term
@@ -36,9 +48,27 @@ subTerm subst (Func f ts) = Func f $ map (subTerm subst) ts
 subAtom :: Substitution -> Atom -> Atom
 subAtom subst (Atom a ts) = Atom a $ fmap (subTerm subst) ts
 
-subMatchings :: Substition -> [Matching] -> [Matching]
-subMatchings subst = map $ fmap $ subTerm subst
+subMatchings :: Substitution -> [Matching] -> [Matching]
+subMatchings subst = map $ mapTerms $ subTerm subst
 
+subReplacement :: Substitution -> Replacement -> Replacement
+subReplacement subst (x := t) = x := subTerm subst t
+
+
+-- Composes two substitutions. Contains duplicates if s1 and s2 intersect
+composeSub :: Substitution -> Substitution -> Substitution
+composeSub s1 s2 = map (subReplacement s2) s1 ++ s2
+
+  -- ++ filter (not . (`elem` vars s1) . getVar) s2
+--getVar :: Replacement -> UpperName
+--getVar (x := _) = x
+--vars :: Substitution -> [UpperName]
+--vars = map getVar
+
+unifyAtoms :: Atom -> Atom -> Maybe Substitution
+unifyAtoms (Atom x ts) (Atom y ks) = do
+  guard $ x == y
+  unify $ (zipWith (:==:) `on` toList) ts ks
 
 -- Makes a substitution, i.e. a mapping Var -> Term,
 -- from a list of matchings, i.e. a list of wanted equations of terms t :==: k.
@@ -60,4 +90,3 @@ match (Var x) t ms
   where subst = [x := t]
 match t v@(Var _) ms
   = match v t ms
-match _ _ = Nothing
