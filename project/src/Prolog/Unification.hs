@@ -4,6 +4,7 @@ module Prolog.Unification
   , subTerm
   , subAtom
   , composeSub
+  , vars
   , unify
   , unifyAtoms
   ) where
@@ -28,8 +29,12 @@ mapTerms f (t :==: k) = f t :==: f k
 
 -- A variable name to be replaced with a term
 data Replacement = UpperName := Term
+  deriving (Eq)
 -- List of replacements, whose variable names should not intersect.
 type Substitution = [Replacement]
+
+instance Show Replacement where
+  show (x := t) = x ++ " := " ++ show t
 
 subVar :: Substitution -> UpperName -> Term
 subVar subst x = case mapMaybe sameVarTerm subst of
@@ -57,13 +62,15 @@ subReplacement subst (x := t) = x := subTerm subst t
 
 -- Composes two substitutions. Contains duplicates if s1 and s2 intersect
 composeSub :: Substitution -> Substitution -> Substitution
-composeSub s1 s2 = map (subReplacement s2) s1 ++ s2
+composeSub s1 s2
+  =  map (subReplacement s2) s1
+  ++ filter (not . (`elem` vars s1) . getVar) s2
 
-  -- ++ filter (not . (`elem` vars s1) . getVar) s2
---getVar :: Replacement -> UpperName
---getVar (x := _) = x
---vars :: Substitution -> [UpperName]
---vars = map getVar
+getVar :: Replacement -> UpperName
+getVar (x := _) = x
+
+vars :: Substitution -> [UpperName]
+vars = map getVar
 
 unifyAtoms :: Atom -> Atom -> Maybe Substitution
 unifyAtoms (Atom x ts) (Atom y ks) = do
