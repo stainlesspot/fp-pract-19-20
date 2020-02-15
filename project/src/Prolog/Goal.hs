@@ -2,8 +2,6 @@
 
 module Prolog.Goal (Goal, resolve) where
 
-import Debug.Trace
-
 import Prolog.Program
   ( Atom
   , Term(..)
@@ -41,7 +39,7 @@ subGoal = map . subAtom
 -- Assumes no variable names intersect between the program and the goal.
 resolveNI :: Program -> Goal -> [Substitution]
 resolveNI _    []     = [[]] -- list of the empty substitution
-                           -- because the empty list represents failure
+                             -- because the empty list represents failure
 resolveNI prog (a:as) = concatMap (uncurry resolveRest) $ resolveAtom prog a
   where
     -- `subst` unifies `a` with some clause in `prog`,
@@ -67,7 +65,7 @@ varPrefix = "i"
 resolve :: Program -> Goal -> [Substitution]
 resolve prog as
   = map (filter $ isUpperName . getVar)
-  $ resolveNI (traceShowId $ mapTerms prefixVar prog) as
+  $ resolveNI (mapTerms prefixVar prog) as
   where isUpperName :: String -> Bool
         isUpperName [] = False
         isUpperName (c:_) = isUpperNameStart c

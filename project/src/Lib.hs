@@ -11,6 +11,7 @@ import Control.Monad (forever)
 
 printPartialHelper :: Show a => [a] -> IO ()
 printPartialHelper []     = pure ()
+printPartialHelper [x]    = print x
 printPartialHelper (x:xs) = do
   print x
   c <- getChar
@@ -29,10 +30,11 @@ repl program = forever $ do
   putStr "?- "
   hFlush stdout
   inputGoal <- getLine
-  case parse goalParser inputGoal of
-    Nothing -> putStrLn "Not a valid goal."
-    Just [] -> putStrLn "false."
-    Just as -> printPartial $ map CSV $ resolve program as
+  case resolve program <$> parse goalParser inputGoal of
+    Nothing   -> putStrLn "Not a valid goal."
+    Just []   -> putStrLn "false."
+    Just [[]] -> putStrLn "true."
+    Just ss   -> printPartial $ map CSV ss
 
 parseFile :: String -> IO ()
 parseFile path = do
