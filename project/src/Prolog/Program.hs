@@ -22,7 +22,16 @@ type LowerName = String
 -- Variables start with an upper-case letter
 -- and function symbols start with a lower-case letter.
 data Term = Var UpperName | Func LowerName [Term]
-  deriving (Show, Eq)
+  deriving (Eq)
+
+showTuple :: Show a => NonEmpty a -> String
+showTuple (x:|[]) = show x
+showTuple (x:|(y:xs)) = show x ++ ", " ++ showTuple (y:|xs)
+
+instance Show Term where
+  show (Var x) = x
+  show (Func f []) = f
+  show (Func f (t:ts)) = f ++ "(" ++ showTuple (t:|ts) ++ ")"
 
 -- Atoms start with a lower-case letter and have at least one term
 data Atom = Atom LowerName (NonEmpty Term) 
