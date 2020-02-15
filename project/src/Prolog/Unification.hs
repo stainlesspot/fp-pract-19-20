@@ -4,16 +4,13 @@ module Prolog.Unification
   , subTerm
   , subAtom
   , composeSub
+  , getVar
   , vars
   , unify
   , unifyAtoms
   ) where
 
-import Prolog.Program
-  ( UpperName
-  , Term(..)
-  , Atom(..)
-  )
+import Prolog.Program (Term(..), Atom(..))
 
 import Data.List.NonEmpty (toList)
 import Data.Function (on)
@@ -27,8 +24,8 @@ data Matching = Term :==: Term
 mapTerms :: (Term -> Term) -> Matching -> Matching
 mapTerms f (t :==: k) = f t :==: f k
 
--- A variable name to be replaced with a term
-data Replacement = UpperName := Term
+-- A variable name to be replaced with a term.
+data Replacement = String := Term
   deriving (Eq)
 -- List of replacements, whose variable names should not intersect.
 type Substitution = [Replacement]
@@ -36,7 +33,8 @@ type Substitution = [Replacement]
 instance Show Replacement where
   show (x := t) = x ++ " := " ++ show t
 
-subVar :: Substitution -> UpperName -> Term
+-- Substitute a variable name with its corresponding term.
+subVar :: Substitution -> String -> Term
 subVar subst x = case mapMaybe sameVarTerm subst of
   []    -> Var x
   (t:_) -> t
@@ -45,31 +43,34 @@ subVar subst x = case mapMaybe sameVarTerm subst of
           | x == y    = Just t
           | otherwise = Nothing
           
-
+-- Substitute all vars in a term.
 subTerm :: Substitution -> Term -> Term
 subTerm subst (Var x)     = subVar subst x
 subTerm subst (Func f ts) = Func f $ map (subTerm subst) ts
 
+-- Substitute all vars in an atom.
 subAtom :: Substitution -> Atom -> Atom
 subAtom subst (Atom a ts) = Atom a $ fmap (subTerm subst) ts
 
+-- Substitute all vars in a matching.
 subMatchings :: Substitution -> [Matching] -> [Matching]
 subMatchings subst = map $ mapTerms $ subTerm subst
 
+-- Substitute all vars in the term of a replacement.
 subReplacement :: Substitution -> Replacement -> Replacement
 subReplacement subst (x := t) = x := subTerm subst t
 
 
--- Composes two substitutions. Contains duplicates if s1 and s2 intersect
+-- Composes two substitutions.
 composeSub :: Substitution -> Substitution -> Substitution
 composeSub s1 s2
   =  map (subReplacement s2) s1
   ++ filter (not . (`elem` vars s1) . getVar) s2
 
-getVar :: Replacement -> UpperName
+getVar :: Replacement -> String
 getVar (x := _) = x
 
-vars :: Substitution -> [UpperName]
+vars :: Substitution -> [String]
 vars = map getVar
 
 unifyAtoms :: Atom -> Atom -> Maybe Substitution

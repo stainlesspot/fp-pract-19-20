@@ -8,7 +8,7 @@ module Prolog.ProgramParser
   , goalParser
   ) where
 
-import Data.Char (isUpper, isLower, isAlphaNum, isSpace)
+import Data.Char (isLower, isAlphaNum, isSpace)
 
 import Data.List.NonEmpty (NonEmpty(..), toList)
 import Prolog.Program
@@ -18,6 +18,7 @@ import Prolog.Program
   , Atom(..)
   , HornClause(..)
   , Program
+  , isUpperNameStart
   )
 
 import Parser
@@ -109,7 +110,7 @@ optionalTuple = toListParser . tuple1
 
 upperNameParser :: Parser UpperName
 upperNameParser = do
-  u <- satisfy isUpper
+  u <- satisfy isUpperNameStart
   rest <- many $ satisfy isAlphaNumUnderscore
   pure $ u:rest
 

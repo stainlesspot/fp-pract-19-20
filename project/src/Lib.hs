@@ -1,6 +1,6 @@
 module Lib where
 
-import Prolog.Program (Program)
+import Prolog.Program (Program, CSV(..))
 import Prolog.ProgramParser (programParser, goalParser)
 import Prolog.Goal (resolve)
 import Parser (parse)
@@ -32,7 +32,7 @@ repl program = forever $ do
   case parse goalParser inputGoal of
     Nothing -> putStrLn "Not a valid goal."
     Just [] -> putStrLn "false."
-    Just as -> printPartial $ resolve program as
+    Just as -> printPartial $ map CSV $ resolve program as
 
 parseFile :: String -> IO ()
 parseFile path = do
