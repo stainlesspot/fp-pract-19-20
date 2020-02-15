@@ -73,8 +73,8 @@ resolve prog as
         isUpperName (c:_) = isUpperNameStart c
 
         prefixVar :: Term -> Term
-        prefixVar (Var x) = Var $ varPrefix ++ x
-        prefixVar t       = t
+        prefixVar (Var x)     = Var $ varPrefix ++ x
+        prefixVar (Func f ts) = Func f $ map prefixVar ts
 -- X = s(Y)
 -- X = S(Y)
 --
