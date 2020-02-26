@@ -1,5 +1,6 @@
 module Prolog.Unification
   ( Substitution
+  , emptySubst
   , subVar
   , subTerm
   , subAtom
@@ -29,6 +30,9 @@ data Replacement = String := Term
   deriving (Eq)
 -- List of replacements, whose variable names should not intersect.
 type Substitution = [Replacement]
+
+emptySubst :: Substitution
+emptySubst = []
 
 instance Show Replacement where
   show (x := t) = x ++ " := " ++ show t

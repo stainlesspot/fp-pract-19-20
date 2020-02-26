@@ -12,56 +12,54 @@ import Prolog.Program
   )
 import Prolog.Unification
   ( Substitution
+  , emptySubst
   , subAtom
   , composeSub
   , unifyAtoms
   , getVar
   )
 
-import Data.List.NonEmpty (NonEmpty(..), toList)
 import Data.Maybe (mapMaybe)
 
+-- A goal is a conjunction of atoms, which are sought to be satisfied.
 type Goal = [Atom]
-
--- Tries to match the atom `a` with every clause in the program.
--- Every success generates a goal and substitution.
--- The goal is clause's body and the substitution unifies `a` with the clause head.
-resolveAtom :: Program -> Atom -> [(Goal, Substitution)]
-resolveAtom prog a = mapMaybe matchClause prog
-  where matchClause :: HornClause -> Maybe (Goal, Substitution)
-        matchClause (b :- bs) = (bs,) <$> unifyAtoms a b
 
 -- Applies a substitution to a goal.
 subGoal :: Substitution -> Goal -> Goal
 subGoal = map . subAtom
 
--- resolveNonIntersecting
+-- Used to differentiate goal and program variables.
+-- User variables always start with an upper-case letter,
+-- so this prefix cannot appear in user programs or goals.
+varPrefix :: String
+varPrefix = "i"
+
+-- Tries to match the atom `a` with every clause in the program.
+-- Every success generates a goal and substitution.
+-- The goal is the clause body and the substitution unifies `a` with the clause head.
+resolveAtom :: Program -> Atom -> [(Goal, Substitution)]
+resolveAtom prog a = mapMaybe matchClause prog
+  where matchClause :: HornClause -> Maybe (Goal, Substitution)
+        matchClause (b :- bs) = (bs,) <$> unifyAtoms a b
+
+-- Returns all (possibly infinite) substitutions, which resolve the goal from the given program.
 -- Assumes no variable names intersect between the program and the goal.
 resolveNI :: Program -> Goal -> [Substitution]
-resolveNI _    []     = [[]] -- list of the empty substitution
-                             -- because the empty list represents failure
+resolveNI _    []     = [emptySubst] -- this means the goal is trivially resolved,
+                                     -- the empty list would mean the goal cannot be resolved
 resolveNI prog (a:as) = concatMap (uncurry resolveRest) $ resolveAtom prog a
   where
-    -- `subst` unifies `a` with some clause in `prog`,
-    -- and `bs` is that clause's body.
-    -- This means `a` is replaced in the original goal by `bs`.
-    -- `subst` is applied on the new goal,
-    -- as to reflect the unification of `a` with the clause's head.
-    -- `subst` is then composed with every possible 
+    -- Constructs and resolves the new goal, derived by resolving `a`.
+    -- The clause body and unifying substitution are given.
+    -- That substitution is composed upon all results.
     resolveRest :: Goal -> Substitution -> [Substitution]
     resolveRest bs subst
       = map (composeSub subst)
       $ resolveNI prog $ subGoal subst $ bs ++ as
 
--- used to make program vars different from goal vars.
-varPrefix :: String
-varPrefix = "i"
 
--- Finds all substitutions, possibly infinite, for which the given goal is
--- resolved from any combination of clauses from the given program.
--- Every returned substitution, when applied to the input goal,
--- gives a conjuntion of atoms, which holds true according to the rules in the
--- given program.
+-- Returns all (possibly infinite) substitutions, which resolve the goal from the given program.
+-- To avoid clashes, program variables are renamed.
 resolve :: Program -> Goal -> [Substitution]
 resolve prog as
   = map (filter $ isUpperName . getVar)
@@ -73,16 +71,3 @@ resolve prog as
         prefixVar :: Term -> Term
         prefixVar (Var x)     = Var $ varPrefix ++ x
         prefixVar (Func f ts) = Func f $ map prefixVar ts
--- X = s(Y)
--- X = S(Y)
---
---Y = s(Z0)
---nat(Z0)
---Z0 = s(Z1)
---nat(Z1)
---Z1 = z
---
---
---nat(X)
---Y = s(X).
---X = s(X)
