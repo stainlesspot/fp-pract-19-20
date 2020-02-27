@@ -1,11 +1,20 @@
 nat(z).
 nat(s(X)):-nat(X).
 
-niet(s(X)):-niet(X).
+five(s(s(s(s(s(z)))))).
+five(succ(succ(succ(succ(succ(zero)))))).
+
+plus(z,Y,Y).
+plus(s(X),Y,s(R)) :- plus(X,Y,R).
+
+mult(z,Y,z).
+mult(s(X),Y,R) :- mult(X,Y,P), plus(Y,P,R).
+
+endless(s(X)):-endless(X).
 
 person(me).
 
-everything(X).
+always(X).
 
 likes(peter,S):-student_of(S,peter).
 likes(peter,Y):-likes(peter,X),likes(X,Y).
