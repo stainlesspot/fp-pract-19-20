@@ -10,6 +10,8 @@ import Control.Monad (when, forever)
 import System.IO
   ( stdin
   , stdout
+  , stderr
+  , hPutStrLn
   , hFlush
   , hSetBuffering
   , BufferMode (NoBuffering, LineBuffering)
@@ -62,7 +64,7 @@ repl program = forever $ do
   inputGoal <- getLine
   case resolve program <$> parse goalParser inputGoal of
     Nothing   -> when (inputGoal /= "")
-                   $ putStrLn "Not a valid goal."
+                   $ hPutStrLn stderr "Not a valid goal."
     Just []   -> putStrLn "false."
     Just [[]] -> putStrLn "true."
     Just ss   -> printSubstitutions ss
