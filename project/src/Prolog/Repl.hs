@@ -61,7 +61,8 @@ repl program = forever $ do
   hFlush stdout
   inputGoal <- getLine
   case resolve program <$> parse goalParser inputGoal of
-    Nothing   -> putStrLn "Not a valid goal."
+    Nothing   -> when (inputGoal /= "")
+                   $ putStrLn "Not a valid goal."
     Just []   -> putStrLn "false."
     Just [[]] -> putStrLn "true."
     Just ss   -> printSubstitutions ss
