@@ -1,40 +1,9 @@
 module Lib where
 
-import Prolog.Program (Program, CSV(..))
-import Prolog.ProgramParser (programParser, goalParser)
-import Prolog.Goal (resolve)
+import Prolog.Repl (repl)
+import Prolog.ProgramParser (programParser)
 import Parser (parse)
-import System.Environment
-import System.IO
-import Data.List
-import Control.Monad (forever)
-
-printPartialHelper :: Show a => [a] -> IO ()
-printPartialHelper []     = pure ()
-printPartialHelper [x]    = print x
-printPartialHelper (x:xs) = do
-  print x
-  c <- getChar
-  if c == ' ' || c == ';'
-     then printPartial xs
-     else pure ()
-
-printPartial :: Show a => [a] -> IO ()
-printPartial xs = do
-  hSetBuffering stdin NoBuffering
-  printPartialHelper xs
-  hSetBuffering stdin LineBuffering
-
-repl :: Program -> IO ()
-repl program = forever $ do
-  putStr "?- "
-  hFlush stdout
-  inputGoal <- getLine
-  case resolve program <$> parse goalParser inputGoal of
-    Nothing   -> putStrLn "Not a valid goal."
-    Just []   -> putStrLn "false."
-    Just [[]] -> putStrLn "true."
-    Just ss   -> printPartial $ map CSV ss
+import System.Environment (getArgs)
 
 parseFile :: String -> IO ()
 parseFile path = do

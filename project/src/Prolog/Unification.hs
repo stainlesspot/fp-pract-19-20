@@ -1,5 +1,6 @@
 module Prolog.Unification
   ( Substitution
+  , Replacement(..)
   , emptySubst
   , subVar
   , subTerm
@@ -18,6 +19,12 @@ import Data.Function (on)
 import Data.Maybe (mapMaybe)
 import Control.Monad (guard)
 
+-- A variable name to be replaced with a term.
+data Replacement = String := Term
+  deriving (Show, Eq)
+-- List of replacements, whose variable names should not intersect.
+type Substitution = [Replacement]
+
 -- An equation of two terms,
 -- represents the need to make them equal through a substitution.
 data Matching = Matching Term Term
@@ -26,17 +33,8 @@ data Matching = Matching Term Term
 mapTerms :: (Term -> Term) -> Matching -> Matching
 mapTerms f (Matching t k) = Matching (f t) (f k)
 
--- A variable name to be replaced with a term.
-data Replacement = String := Term
-  deriving (Eq)
--- List of replacements, whose variable names should not intersect.
-type Substitution = [Replacement]
-
 emptySubst :: Substitution
 emptySubst = []
-
-instance Show Replacement where
-  show (x := t) = x ++ " := " ++ show t
 
 -- Substitute a variable name with its corresponding term.
 subVar :: Substitution -> String -> Term

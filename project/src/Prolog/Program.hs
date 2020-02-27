@@ -5,7 +5,6 @@ module Prolog.Program
   , Atom(..)
   , HornClause(..)
   , Program
-  , CSV(..)
   , mapAtoms
   , mapTerms
   , isUpperNameStart
@@ -31,22 +30,7 @@ isUpperNameStart = isUpper
 -- but other variable names may also be generated.
 -- Function symbols start with a lower-case letter.
 data Term = Var String | Func LowerName [Term]
-  deriving (Eq)
-
--- comma separated values
-newtype CSV a = CSV [a]
-  deriving Eq
-
-instance Show a => Show (CSV a) where
-  show (CSV [])  = ""
-  show (CSV [x]) = show x
-  show (CSV (x:xs)) = show x ++ ", " ++ show xs
-
-
-instance Show Term where
-  show (Var x) = x
-  show (Func f []) = f
-  show (Func f ts) = f ++ "(" ++ show (CSV ts) ++ ")"
+  deriving (Show, Eq)
 
 -- Atoms start with a lower-case letter and have at least one term
 data Atom = Atom LowerName (NonEmpty Term) 

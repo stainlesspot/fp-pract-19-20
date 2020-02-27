@@ -21,11 +21,15 @@ import Prolog.Unification
 
 import Data.Maybe (mapMaybe)
 
--- A goal is a conjunction of atoms, which are sought to be satisfied.
+-- A goal is a conjunction of atoms, which are sought to be satisfied/proven.
+--data Goal = EmptyGoal | Atom :&: Goal
+--infixl :&: 5
 type Goal = [Atom]
 
 -- Applies a substitution to a goal.
 subGoal :: Substitution -> Goal -> Goal
+--subGoal EmptyGoal = EmptyGoal
+--subGoal (a :&: as)
 subGoal = map . subAtom
 
 -- Used to differentiate goal and program variables.
@@ -42,7 +46,8 @@ resolveAtom prog a = mapMaybe matchClause prog
   where matchClause :: HornClause -> Maybe (Goal, Substitution)
         matchClause (b :- bs) = (bs,) <$> unifyAtoms a b
 
--- Returns all (possibly infinite) substitutions, which resolve the goal from the given program.
+-- Returns all (possibly infinite) substitutions,
+-- which resolve the goal from the given program.
 -- Assumes no variable names intersect between the program and the goal.
 resolveNI :: Program -> Goal -> [Substitution]
 resolveNI _    []     = [emptySubst] -- this means the goal is trivially resolved,
@@ -58,7 +63,8 @@ resolveNI prog (a:as) = concatMap (uncurry resolveRest) $ resolveAtom prog a
       $ resolveNI prog $ subGoal subst $ bs ++ as
 
 
--- Returns all (possibly infinite) substitutions, which resolve the goal from the given program.
+-- Returns all (possibly infinite) substitutions,
+-- which resolve the goal from the given program.
 -- To avoid clashes, program variables are renamed.
 resolve :: Program -> Goal -> [Substitution]
 resolve prog as
