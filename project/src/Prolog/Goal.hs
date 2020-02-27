@@ -1,5 +1,3 @@
-{-# Language TupleSections #-}
-
 module Prolog.Goal (Goal, resolve) where
 
 import Prolog.Program
@@ -21,15 +19,12 @@ import Prolog.Unification
 
 import Data.Maybe (mapMaybe)
 
--- A goal is a conjunction of atoms, which are sought to be satisfied/proven.
---data Goal = EmptyGoal | Atom :&: Goal
---infixl :&: 5
+-- A goal is a conjunction of atoms, which are sought to be satisfied.
+-- The empty goal `[]` is trivially true.
 type Goal = [Atom]
 
 -- Applies a substitution to a goal.
 subGoal :: Substitution -> Goal -> Goal
---subGoal EmptyGoal = EmptyGoal
---subGoal (a :&: as)
 subGoal = map . subAtom
 
 -- Used to differentiate goal and program variables.
@@ -44,7 +39,7 @@ varPrefix = "i"
 resolveAtom :: Program -> Atom -> [(Goal, Substitution)]
 resolveAtom prog a = mapMaybe matchClause prog
   where matchClause :: HornClause -> Maybe (Goal, Substitution)
-        matchClause (b :- bs) = (bs,) <$> unifyAtoms a b
+        matchClause (b :- bs) = (,) bs <$> unifyAtoms a b
 
 -- Returns all (possibly infinite) substitutions,
 -- which resolve the goal from the given program.
