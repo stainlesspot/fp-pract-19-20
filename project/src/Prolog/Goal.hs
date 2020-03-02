@@ -38,8 +38,9 @@ varPrefix = "i"
 -- The goal is the clause body and the substitution unifies `a` with the clause head.
 resolveAtom :: Program -> Atom -> [(Goal, Substitution)]
 resolveAtom prog a = mapMaybe matchClause prog
-  where matchClause :: HornClause -> Maybe (Goal, Substitution)
-        matchClause (b :- bs) = (,) bs <$> unifyAtoms a b
+  where
+    matchClause :: HornClause -> Maybe (Goal, Substitution)
+    matchClause (b :- bs) = (,) bs <$> unifyAtoms a b
 
 -- Returns all (possibly infinite) substitutions,
 -- which resolve the goal from the given program.
@@ -51,7 +52,7 @@ resolveNI prog (a:as) = concatMap (uncurry resolveRest) $ resolveAtom prog a
   where
     -- Constructs and resolves the new goal, derived by resolving `a`.
     -- The clause body and unifying substitution are given.
-    -- That substitution is composed upon all results.
+    -- That substitution is composed upon all results, as it is part of the answer.
     resolveRest :: Goal -> Substitution -> [Substitution]
     resolveRest bs subst
       = map (composeSub subst)
@@ -65,10 +66,11 @@ resolve :: Program -> Goal -> [Substitution]
 resolve prog as
   = map (filter $ isUpperName . getVar)
   $ resolveNI (mapTerms prefixVar prog) as
-  where isUpperName :: String -> Bool
-        isUpperName [] = False
-        isUpperName (c:_) = isUpperNameStart c
+  where
+    isUpperName :: String -> Bool
+    isUpperName [] = False
+    isUpperName (c:_) = isUpperNameStart c
 
-        prefixVar :: Term -> Term
-        prefixVar (Var x)     = Var $ varPrefix ++ x
-        prefixVar (Func f ts) = Func f $ map prefixVar ts
+    prefixVar :: Term -> Term
+    prefixVar (Var x)     = Var $ varPrefix ++ x
+    prefixVar (Func f ts) = Func f $ map prefixVar ts
