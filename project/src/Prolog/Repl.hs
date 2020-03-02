@@ -6,7 +6,7 @@ import Prolog.Unification (Substitution, Replacement(..))
 import Prolog.Goal (resolve)
 import Parser (parse)
 
-import Control.Monad (when, forever)
+import Control.Monad (when, unless, forever)
 import System.IO
   ( stdin
   , stdout
@@ -16,13 +16,12 @@ import System.IO
   , hSetBuffering
   , BufferMode (NoBuffering, LineBuffering)
   )
+import Data.List (intercalate)
 
 -- Displays a list as comma separated values,
 -- using a given display function for each value.
 displayCSV :: (a -> String) -> [a] -> String
-displayCSV _       []     = ""
-displayCSV display [x]    = display x
-displayCSV display (x:xs) = display x ++ ", " ++ displayCSV display xs
+displayCSV display = intercalate ", " . map display
 
 displayTerm :: Term -> String
 displayTerm (Var x)     = x
@@ -33,13 +32,13 @@ displayReplacement :: Replacement -> String
 displayReplacement (x := t) = x ++ " = " ++ displayTerm t
 
 displaySubstitution :: Substitution -> String
-displaySubstitution = displayCSV displayReplacement
+displaySubstitution [] = "true."
+displaySubstitution s  = displayCSV displayReplacement s
 
 -- Prints a list one element at a time, waiting for the user to input a character.
 -- It determines whether to continue printing or not.
 printOneByOne :: (a -> String) -> (Char -> Bool) -> [a] -> IO ()
 printOneByOne _ _ [] = pure ()
-printOneByOne display _ [x] = putStrLn $ display x
 printOneByOne display isContinue (x:xs) = do
   putStrLn $ display x
   c <- getChar
@@ -47,7 +46,8 @@ printOneByOne display isContinue (x:xs) = do
 
 -- Interactively prints substitutions one by one. They may be skipped altogether. 
 printSubstitutions :: [Substitution] -> IO ()
-printSubstitutions ss = do
+printSubstitutions []   = putStrLn "false."
+printSubstitutions ss   = do
   hSetBuffering stdin NoBuffering
   printOneByOne displaySubstitution isContinue ss
   hSetBuffering stdin LineBuffering
@@ -63,8 +63,6 @@ repl program = forever $ do
   hFlush stdout
   inputGoal <- getLine
   case resolve program <$> parse goalParser inputGoal of
-    Nothing   -> when (inputGoal /= "")
+    Nothing   -> unless (inputGoal == "")
                    $ hPutStrLn stderr "Not a valid goal."
-    Just []   -> putStrLn "false."
-    Just [[]] -> putStrLn "true."
     Just ss   -> printSubstitutions ss
