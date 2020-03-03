@@ -41,10 +41,11 @@ subVar :: Substitution -> String -> Term
 subVar subst x = case mapMaybe sameVarTerm subst of
   []    -> Var x
   (t:_) -> t
-  where sameVarTerm :: Replacement -> Maybe Term
-        sameVarTerm (y := t)
-          | x == y    = Just t
-          | otherwise = Nothing
+  where
+    sameVarTerm :: Replacement -> Maybe Term
+    sameVarTerm (y := t)
+      | x == y    = Just t
+      | otherwise = Nothing
           
 -- Substitute all vars in a term.
 subTerm :: Substitution -> Term -> Term
@@ -78,7 +79,7 @@ vars = map getVar
 
 unifyAtoms :: Atom -> Atom -> Maybe Substitution
 unifyAtoms (Atom x ts) (Atom y ks) = do
-  guard $ x == y
+  guard $ x == y && length ts == length ks
   unify $ (zipWith Matching `on` toList) ts ks
 
 -- Makes a substitution, i.e., a mapping Var -> Term,
@@ -95,9 +96,11 @@ match (Func f ts) (Func g ks) ms
   | f == g && length ts == length ks
     = unify $ ms' ++ ms
   | otherwise = Nothing
-  where ms' = zipWith Matching ts ks
+  where
+    ms' = zipWith Matching ts ks
 
 match (Var x) t ms = (subst ++) <$> unify (subMatchings subst ms)
-  where subst = [x := t]
+  where
+    subst = [x := t]
 
 match t v@(Var _) ms = match v t ms
