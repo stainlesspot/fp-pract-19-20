@@ -1,6 +1,10 @@
 nat(z).
 nat(s(X)):-nat(X).
 
+one(s(z)).
+two(s(s(z))).
+three(s(s(s(z)))).
+four(s(s(s(s(z))))).
 five(s(s(s(s(s(z)))))).
 five(succ(succ(succ(succ(succ(zero)))))).
 
